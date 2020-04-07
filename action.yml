@@ -1,0 +1,40 @@
+name: 'Bump Spinnaker Dependencies'
+description: 'Bump dependencies in external repositories upon a release'
+inputs:
+  ref:
+    description: 'the release ref triggering this dependency bump'
+    required: true
+  key:
+    description: 'the key in gradle.properties to modify'
+    required: true
+  repositories:
+    description: 'the comma-separated list of repository names to modify'
+    required: true
+  repoOwner:
+    description: 'the owner of the repositories to modify'
+    required: true
+    default: spinnakerbot
+  upstreamOwner:
+    description: 'the owner of the repositories to send pull requests to'
+    required: true
+    default: spinnaker
+  reviewers:
+    description: "the comma-separated list of reviewers (prefixed with 'team:' for a team) for the pull request"
+    required: true
+    default: 'team:oss-reviewers'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - '--ref'
+  - ${{ inputs.ref }}
+  - '--key'
+  - ${{ inputs.key }}
+  - '--repositories'
+  - ${{ inputs.repositories }}
+  - '--repo-owner'
+  - ${{ inputs.repoOwner }}
+  - '--upstream-owner'
+  - ${{ inputs.upstreamOwner }}
+  - '--reviewers'
+  - ${{ inputs.reviewers }}
