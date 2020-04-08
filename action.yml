@@ -21,7 +21,7 @@ inputs:
   reviewers:
     description: "the comma-separated list of reviewers (prefixed with 'team:' for a team) for the pull request"
     required: true
-    default: 'team:oss-reviewers'
+    default: ''
 runs:
   using: 'docker'
   image: 'Dockerfile'
