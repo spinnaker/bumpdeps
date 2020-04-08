@@ -11,10 +11,6 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 import mu.KotlinLogging
 import nu.studer.java.util.OrderedProperties.OrderedPropertiesBuilder
@@ -30,7 +26,7 @@ class BumpDeps : CliktCommand() {
     private val logger = KotlinLogging.logger {}
 
     companion object {
-        val REF_PREFIX = "refs/tags/v"
+        const val REF_PREFIX = "refs/tags/v"
         const val GITHUB_OAUTH_TOKEN_ENV_NAME = "GITHUB_OAUTH"
     }
 
@@ -59,30 +55,24 @@ class BumpDeps : CliktCommand() {
         .default(Reviewers())
 
     private val oauthToken by lazy {
-        val oauthToken = System.getenv(GITHUB_OAUTH_TOKEN_ENV_NAME)
-        if (oauthToken == null) {
-            throw UsageError("A GitHub OAuth token must be provided in the $GITHUB_OAUTH_TOKEN_ENV_NAME environment variable")
-        }
-        oauthToken
+        System.getenv(GITHUB_OAUTH_TOKEN_ENV_NAME)
+            ?: throw UsageError("A GitHub OAuth token must be provided in the $GITHUB_OAUTH_TOKEN_ENV_NAME environment variable")
     }
 
     override fun run() {
         val repoParent = createTempDirectory()
 
-        val executor = Executors.newCachedThreadPool()
-        val results = mutableMapOf<String, Future<*>>()
+        var failures = false
         repositories.forEach { repoName ->
-            results[repoName] = executor.submit {
+            try {
                 val branchName = "autobump-$key"
                 createModifiedBranch(repoParent, repoName, branchName)
                 createPullRequest(repoName, branchName)
+            } catch (e: Exception) {
+                logger.error(e) { "Exception updating repository $repoName" }
+                failures = true
             }
         }
-
-        executor.shutdown()
-        executor.awaitTermination(10, TimeUnit.MINUTES)
-
-        val failures = waitForResults(results)
 
         if (failures) {
             exitProcess(1)
@@ -179,25 +169,12 @@ class BumpDeps : CliktCommand() {
     }
 
     data class Reviewers(val users: Set<String> = setOf(), val teams: Set<String> = setOf())
+
     private fun convertReviewersArg(reviewersString: String): Reviewers {
         val reviewers = reviewersString.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
         val teams = reviewers.filter { it.startsWith("team:") }.toSet()
         val users = reviewers - teams
         return Reviewers(users, teams.map { it.removePrefix("team:") }.toSet())
-    }
-
-    private fun waitForResults(results: MutableMap<String, Future<*>>): Boolean {
-        var failures = false
-        results
-            .forEach { result ->
-                try {
-                    result.value.get()
-                } catch (e: ExecutionException) {
-                    logger.error(e) { "Exception updating repository ${result.key}" }
-                    failures = true
-                }
-            }
-        return failures
     }
 
     private fun createTempDirectory(): Path {
