@@ -20,6 +20,8 @@ import org.eclipse.jgit.transport.URIish
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.kohsuke.github.GHIssueState
 import org.kohsuke.github.GitHubBuilder
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 class BumpDeps : CliktCommand() {
 
@@ -61,6 +63,10 @@ class BumpDeps : CliktCommand() {
 
     override fun run() {
         val repoParent = createTempDirectory()
+
+        // TODO(plumpy): add a maven artifact ID flag so we can query bintray and wait until the artifact is available
+        // For now, just sleep 5 minutes and hope for the best.
+        Thread.sleep(Duration.ofMinutes(5).toMillis())
 
         var failures = false
         repositories.forEach { repoName ->
