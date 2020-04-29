@@ -65,8 +65,8 @@ class BumpDeps : CliktCommand() {
         val repoParent = createTempDirectory()
 
         // TODO(plumpy): add a maven artifact ID flag so we can query bintray and wait until the artifact is available
-        // For now, just sleep 5 minutes and hope for the best.
-        Thread.sleep(Duration.ofMinutes(5).toMillis())
+        // For now, just sleep 10 minutes and hope for the best.
+        Thread.sleep(Duration.ofMinutes(10).toMillis())
 
         var failures = false
         repositories.forEach { repoName ->
