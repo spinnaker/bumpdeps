@@ -7,21 +7,17 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.options.split
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import kotlin.system.exitProcess
 import mu.KotlinLogging
-import nu.studer.java.util.OrderedProperties.OrderedPropertiesBuilder
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.URIish
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.kohsuke.github.GHIssueState
 import org.kohsuke.github.GitHubBuilder
-import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 class BumpDeps : CliktCommand() {
 
@@ -120,23 +116,17 @@ class BumpDeps : CliktCommand() {
     }
 
     private fun updatePropertiesFile(gradlePropsFile: Path, repoName: String) {
-        val gradleProps = FileInputStream(gradlePropsFile.toFile()).use { fis ->
-            OrderedPropertiesBuilder()
-                .withOrdering(String.CASE_INSENSITIVE_ORDER)
-                .withSuppressDateInComment(true)
-                .build()
-                .apply { load(fis) }
-        }
-        if (!gradleProps.containsProperty(key)) {
+        val props = NonDestructivePropertiesEditor(gradlePropsFile)
+        val result = props.updateProperty(key, version)
+
+        if (!result.matched) {
             throw IllegalArgumentException("Couldn't locate key $key in $repoName's gradle.properties file")
         }
-        if (gradleProps.getProperty(key) == version) {
+        if (!result.updated) {
             throw IllegalArgumentException("$repoName's $key is already set to $version")
         }
-        gradleProps.setProperty(key, version)
-        FileOutputStream(gradlePropsFile.toFile()).use { fos ->
-            gradleProps.store(fos, /* comments= */ null)
-        }
+
+        props.saveResult(result.lines)
     }
 
     private fun createPullRequest(repoName: String, branchName: String) {
