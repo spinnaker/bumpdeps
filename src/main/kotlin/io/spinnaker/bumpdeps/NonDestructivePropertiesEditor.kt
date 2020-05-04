@@ -1,6 +1,5 @@
 package io.spinnaker.bumpdeps
 
-import java.io.FileWriter
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
@@ -8,12 +7,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
 
 class NonDestructivePropertiesEditor(internal val propertiesFile: Path) {
-    internal val propsCharset: Charset = Charset.forName("8859_1")
+    internal val propsCharset: Charset = Charsets.ISO_8859_1
 
     fun updateProperty(key: String, value: String): Result =
         updateProperty(Files.readAllLines(propertiesFile, propsCharset), key, value)
 
-    fun updateProperty(lines: List<String>, key: String, value: String): Result {
+    internal fun updateProperty(lines: List<String>, key: String, value: String): Result {
         val trimmedKey = key.trim()
         val regex = Pattern.compile("^\\s*${Pattern.quote(trimmedKey)}\\s*=(.*)$")
 
@@ -36,12 +35,7 @@ class NonDestructivePropertiesEditor(internal val propertiesFile: Path) {
     }
 
     fun saveResult(lines: List<String>) {
-        FileWriter(propertiesFile.toFile(), Charset.forName("8859_1")).use { fw ->
-            lines.forEach { line ->
-                fw.write(line)
-                fw.write("\n")
-            }
-        }
+        Files.write(propertiesFile, lines, propsCharset)
     }
 }
 
