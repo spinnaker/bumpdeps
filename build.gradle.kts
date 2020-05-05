@@ -15,9 +15,21 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:1.7.8")
     implementation("org.eclipse.jgit:org.eclipse.jgit:5.7.0.202003110725-r")
     implementation("org.kohsuke:github-api:1.109")
-    implementation("nu.studer:java-ordered-properties:1.0.2")
 
     runtimeOnly("org.slf4j:slf4j-simple:1.7.30")
+
+    testImplementation(platform("org.junit:junit-bom:5.6.2"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("org.junit.platform:junit-platform-runner")
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform {
+        includeEngines("junit-jupiter")
+    }
 }
 
 application {
