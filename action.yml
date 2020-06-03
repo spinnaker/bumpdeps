@@ -22,6 +22,18 @@ inputs:
     description: "the comma-separated list of reviewers (prefixed with 'team:' for a team) for the pull request"
     required: true
     default: ''
+  mavenRepositoryUrl:
+    description: "the root URL for the repository where this artifact is stored"
+    required: false
+    default: ''
+  groupId:
+    description: 'the groupId for the artifact in the maven repository'
+    required: false
+    default: ''
+  artifactId:
+    description: 'the artifactId for the artifact in the maven repository'
+    required: false
+    default: ''
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -38,3 +50,9 @@ runs:
   - ${{ inputs.upstreamOwner }}
   - '--reviewers'
   - ${{ inputs.reviewers }}
+  - '--maven-repository-url'
+  - ${{ inputs.mavenRepositoryUrl }}
+  - '--groupId'
+  - ${{ inputs.groupId }}
+  - '--artifactId'
+  - ${{ inputs.artifactId }}

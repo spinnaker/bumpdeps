@@ -10,8 +10,11 @@ import com.github.ajalt.clikt.parameters.options.split
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+import java.time.Instant
 import kotlin.system.exitProcess
 import mu.KotlinLogging
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.URIish
@@ -57,12 +60,17 @@ class BumpDeps : CliktCommand() {
             ?: throw UsageError("A GitHub OAuth token must be provided in the $GITHUB_OAUTH_TOKEN_ENV_NAME environment variable")
     }
 
+    private val mavenRepositoryUrl by option(help = "the root URL for the repository where this artifact is stored")
+        .convert { it.removeSuffix("/") }
+
+    private val groupId by option(help = "the groupId for the artifact in the maven repository")
+
+    private val artifactId by option(help = "the artifactId for the artifact in the maven repository")
+
     override fun run() {
         val repoParent = createTempDirectory()
 
-        // TODO(plumpy): add a maven artifact ID flag so we can query bintray and wait until the artifact is available
-        // For now, just sleep 10 minutes and hope for the best.
-        Thread.sleep(Duration.ofMinutes(10).toMillis())
+        waitForArtifact()
 
         var failures = false
         repositories.forEach { repoName ->
@@ -78,6 +86,36 @@ class BumpDeps : CliktCommand() {
 
         if (failures) {
             exitProcess(1)
+        }
+    }
+
+    private fun waitForArtifact() {
+        if (mavenRepositoryUrl.isNullOrBlank() || groupId.isNullOrBlank() || artifactId.isNullOrBlank()) {
+            Thread.sleep(Duration.ofMinutes(10).toMillis())
+            return
+        }
+
+        val groupPath = groupId!!.replace('.', '/')
+        val okHttpClient = OkHttpClient.Builder().build()
+        val request = Request.Builder()
+            .url("$mavenRepositoryUrl/$groupPath/$artifactId/$version/$artifactId-$version.pom")
+            .build()
+
+        val start = Instant.now()
+        val retryDelay = Duration.ofSeconds(30)
+        val maxTotalDelay = Duration.ofMinutes(10)
+        while (true) {
+            val response = okHttpClient.newCall(request).execute()
+            if (response.isSuccessful) {
+                return
+            }
+            val delayLeft = maxTotalDelay - Duration.between(start, Instant.now())
+            if (delayLeft.isNegative) {
+                throw RuntimeException("Couldn't find artifact after ${maxTotalDelay.toMinutes()} minutes; giving up.")
+            }
+            val sleepTime = minOf(delayLeft, retryDelay)
+            logger.warn { "Artifact isn't published yet; waiting ${sleepTime.toSeconds()}s" }
+            Thread.sleep(sleepTime.toMillis())
         }
     }
 
