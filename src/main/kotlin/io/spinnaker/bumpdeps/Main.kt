@@ -71,6 +71,7 @@ class BumpDeps : CliktCommand() {
         val repoParent = createTempDirectory()
 
         waitForArtifact()
+        exitProcess(0)
 
         var failures = false
         repositories.forEach { repoName ->
@@ -106,12 +107,14 @@ class BumpDeps : CliktCommand() {
         val maxTotalDelay = Duration.ofMinutes(10)
         while (true) {
             val response = okHttpClient.newCall(request).execute()
+            val elapsed = Duration.between(start, Instant.now())
             if (response.isSuccessful) {
+                logger.info { "Found the artifact after ${elapsed.toSeconds()}s" }
                 return
             }
             val delayLeft = maxTotalDelay - Duration.between(start, Instant.now())
             if (delayLeft.isNegative) {
-                throw RuntimeException("Couldn't find artifact after ${maxTotalDelay.toMinutes()} minutes; giving up.")
+                throw RuntimeException("Couldn't find artifact after ${elapsed.toSeconds()}s; giving up.")
             }
             val sleepTime = minOf(delayLeft, retryDelay)
             logger.warn { "Artifact isn't published yet; waiting ${sleepTime.toSeconds()}s" }
