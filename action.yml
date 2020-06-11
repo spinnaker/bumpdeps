@@ -52,7 +52,7 @@ runs:
   - ${{ inputs.reviewers }}
   - '--maven-repository-url'
   - ${{ inputs.mavenRepositoryUrl }}
-  - '--groupId'
+  - '--group-id'
   - ${{ inputs.groupId }}
-  - '--artifactId'
+  - '--artifact-id'
   - ${{ inputs.artifactId }}
