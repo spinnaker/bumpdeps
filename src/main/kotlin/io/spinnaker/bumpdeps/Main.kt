@@ -71,7 +71,6 @@ class BumpDeps : CliktCommand() {
         val repoParent = createTempDirectory()
 
         waitForArtifact()
-        exitProcess(0)
 
         var failures = false
         repositories.forEach { repoName ->
