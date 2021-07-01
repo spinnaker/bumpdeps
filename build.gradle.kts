@@ -14,8 +14,8 @@ dependencies {
     implementation("com.github.ajalt:clikt:2.7.1")
     implementation("com.squareup.okhttp3:okhttp:4.7.2")
     implementation("io.github.microutils:kotlin-logging:1.7.9")
-    implementation("org.eclipse.jgit:org.eclipse.jgit:5.7.0.202003110725-r")
-    implementation("org.kohsuke:github-api:1.112")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:5.8.0.202006091008-r")
+    implementation("org.kohsuke:github-api:1.129")
 
     runtimeOnly("org.slf4j:slf4j-simple:1.7.30")
 
