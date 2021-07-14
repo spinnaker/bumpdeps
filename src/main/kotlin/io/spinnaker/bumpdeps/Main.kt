@@ -2,6 +2,8 @@ package io.spinnaker.bumpdeps
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.UsageError
+import com.github.ajalt.clikt.core.context
+import com.github.ajalt.clikt.output.CliktHelpFormatter
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
@@ -24,11 +26,16 @@ import org.kohsuke.github.GitHubBuilder
 
 class BumpDeps : CliktCommand() {
 
+    init {
+        context { helpFormatter = CliktHelpFormatter(showDefaultValues = true) }
+    }
+
     private val logger = KotlinLogging.logger {}
 
     companion object {
         const val REF_PREFIX = "refs/tags/v"
         const val GITHUB_OAUTH_TOKEN_ENV_NAME = "GITHUB_OAUTH"
+        const val BASE_BRANCH = "master"
     }
 
     private val version by option("--ref", help = "the release ref triggering this dependency bump").convert { ref ->
@@ -53,7 +60,10 @@ class BumpDeps : CliktCommand() {
 
     private val reviewers by option(help = "the comma-separated list of reviewers (prefixed with 'team:' for a team) for the pull request")
         .convert { convertReviewersArg(it) }
-        .default(Reviewers())
+        .default(Reviewers(), defaultForHelp = "")
+
+    private val baseBranch by option(help = "the name of the branch to target in pull requests")
+        .default(BASE_BRANCH)
 
     private val oauthToken by lazy {
         System.getenv(GITHUB_OAUTH_TOKEN_ENV_NAME)
@@ -75,7 +85,7 @@ class BumpDeps : CliktCommand() {
         var failures = false
         repositories.forEach { repoName ->
             try {
-                val branchName = "autobump-$key"
+                val branchName = "autobump-$key-$baseBranch"
                 createModifiedBranch(repoParent, repoName, branchName)
                 createPullRequest(repoName, branchName)
             } catch (e: Exception) {
@@ -136,6 +146,7 @@ class BumpDeps : CliktCommand() {
             .setCredentialsProvider(credentialsProvider)
             .setURI(upstreamUri)
             .setDirectory(repoRoot.toFile())
+            .setBranch(baseBranch)
             .call()
         val gradlePropsFile = repoRoot.resolve("gradle.properties")
         updatePropertiesFile(gradlePropsFile, repoName)
@@ -187,7 +198,7 @@ class BumpDeps : CliktCommand() {
         val pr = githubRepo.createPullRequest(
             /* title= */"chore(dependencies): Autobump $key",
             /* head= */ "$repoOwner:$branchName",
-            /* base= */ "master",
+            /* base= */ baseBranch,
             /* body= */ ""
         )
 
