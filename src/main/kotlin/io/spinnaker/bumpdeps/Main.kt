@@ -15,6 +15,7 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.system.exitProcess
 import mu.KotlinLogging
+import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.eclipse.jgit.api.Git
@@ -35,6 +36,8 @@ class BumpDeps : CliktCommand() {
     companion object {
         const val REF_PREFIX = "refs/tags/v"
         const val GITHUB_OAUTH_TOKEN_ENV_NAME = "GITHUB_OAUTH"
+        const val MAVEN_REPO_USERNAME_ENV_NAME = "NEXUS_USERNAME"
+        const val MAVEN_REPO_PASSWORD_ENV_NAME = "NEXUS_PASSWORD"
         const val BASE_BRANCH = "master"
     }
 
@@ -73,6 +76,14 @@ class BumpDeps : CliktCommand() {
     private val mavenRepositoryUrl by option(help = "the root URL for the repository where this artifact is stored")
         .convert { it.removeSuffix("/") }
 
+    private val mavenRepositoryUsername by lazy {
+        System.getenv(MAVEN_REPO_USERNAME_ENV_NAME) ?: ""
+    }
+
+    private val mavenRepositoryPassword by lazy {
+        System.getenv(MAVEN_REPO_PASSWORD_ENV_NAME) ?: ""
+    }
+
     private val groupId by option(help = "the groupId for the artifact in the maven repository")
 
     private val artifactId by option(help = "the artifactId for the artifact in the maven repository")
@@ -107,9 +118,15 @@ class BumpDeps : CliktCommand() {
 
         val groupPath = groupId!!.replace('.', '/')
         val okHttpClient = OkHttpClient.Builder().build()
-        val request = Request.Builder()
+        val httpRequestBuilder = Request.Builder()
             .url("$mavenRepositoryUrl/$groupPath/$artifactId/$version/$artifactId-$version.pom")
-            .build()
+
+        if (mavenRepositoryUsername.isNotEmpty() || mavenRepositoryPassword.isNotEmpty()) {
+            logger.info { "using credentials" }
+            var credential = Credentials.basic(mavenRepositoryUsername, mavenRepositoryPassword)
+            httpRequestBuilder.addHeader("Authorization", credential)
+        }
+        val request = httpRequestBuilder.build()
 
         val start = Instant.now()
         val retryDelay = Duration.ofSeconds(30)
