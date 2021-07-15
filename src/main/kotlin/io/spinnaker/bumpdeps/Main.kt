@@ -88,6 +88,12 @@ class BumpDeps : CliktCommand() {
 
     private val artifactId by option(help = "the artifactId for the artifact in the maven repository")
 
+    private val githubUrl by option(help = "the root URL of the github instance to use")
+        .default("https://github.com")
+
+    private val githubApiEndpoint by option(help = "the API endpoint of the github instance to use")
+        .default("https://api.github.com")
+
     override fun run() {
         val repoParent = createTempDirectory()
 
@@ -157,7 +163,7 @@ class BumpDeps : CliktCommand() {
             UsernamePasswordCredentialsProvider("ignored-username", oauthToken)
 
         val repoRoot = repoParent.resolve(repoName)
-        val upstreamUri = "https://github.com/$upstreamOwner/$repoName"
+        val upstreamUri = "$githubUrl/$upstreamOwner/$repoName"
         logger.info { "Cloning $upstreamUri to $repoRoot" }
         val git = Git.cloneRepository()
             .setCredentialsProvider(credentialsProvider)
@@ -172,7 +178,7 @@ class BumpDeps : CliktCommand() {
         }
         git.checkout().setName(branchName).setCreateBranch(true).call()
         git.commit().setMessage("chore(dependencies): Autobump $key").setAll(true).call()
-        val userUri = "https://github.com/$repoOwner/$repoName"
+        val userUri = "$githubUrl/$repoOwner/$repoName"
         git.remoteAdd().setName("userFork").setUri(URIish(userUri)).call()
         logger.info { "Force-pushing changes to $userUri" }
         git.push()
@@ -198,7 +204,7 @@ class BumpDeps : CliktCommand() {
     }
 
     private fun createPullRequest(repoName: String, branchName: String) {
-        val github = GitHubBuilder().withOAuthToken(oauthToken).build()
+        val github = GitHubBuilder().withEndpoint(githubApiEndpoint).withOAuthToken(oauthToken).build()
         val githubRepo = github.getRepository("$upstreamOwner/$repoName")
 
         // If there's already an existing PR, we can just reuse it... we already force-pushed the branch, so it'll
