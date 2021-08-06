@@ -96,7 +96,7 @@ class BumpDeps : CliktCommand() {
 
     override fun run() {
         if (baseBranch.isNullOrEmpty()) {
-            logger.error { "exiting - branch is null or empty. Branch: $baseBranch" }
+            logger.error { "exiting - baseBranch is null or empty" }
             exitProcess(1)
         }
         val repoParent = createTempDirectory()
