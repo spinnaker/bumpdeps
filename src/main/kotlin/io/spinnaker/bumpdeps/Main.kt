@@ -95,6 +95,10 @@ class BumpDeps : CliktCommand() {
         .default("https://api.github.com")
 
     override fun run() {
+        if (baseBranch.isNullOrEmpty()) {
+            logger.error { "exiting - baseBranch is null or empty" }
+            exitProcess(1)
+        }
         val repoParent = createTempDirectory()
 
         waitForArtifact()
