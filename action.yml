@@ -5,8 +5,8 @@ inputs:
     description: 'the release ref triggering this dependency bump'
     required: true
   baseBranch:
-      description: 'the branch to update'
-      required: true
+    description: 'the branch to update'
+    required: true
   key:
     description: 'the key in gradle.properties to modify'
     required: true
