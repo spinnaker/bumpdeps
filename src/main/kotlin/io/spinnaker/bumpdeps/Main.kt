@@ -99,6 +99,7 @@ class BumpDeps : CliktCommand() {
             logger.error { "exiting - baseBranch is null or empty" }
             exitProcess(1)
         }
+        logger.info { "BaseBranch: '$baseBranch'" }
         val repoParent = createTempDirectory()
 
         waitForArtifact()
