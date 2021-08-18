@@ -43,6 +43,8 @@ runs:
   args:
   - '--ref'
   - ${{ inputs.ref }}
+  - '--base-branch'
+  - ${{ inputs.baseBranch }}
   - '--key'
   - ${{ inputs.key }}
   - '--repositories'
