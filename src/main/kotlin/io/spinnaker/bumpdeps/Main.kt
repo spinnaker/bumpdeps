@@ -35,6 +35,7 @@ class BumpDeps : CliktCommand() {
 
     companion object {
         const val REF_PREFIX = "refs/tags/v"
+        const val BRANCH_PREFIX = "origin/"
         const val GITHUB_OAUTH_TOKEN_ENV_NAME = "GITHUB_OAUTH"
         const val MAVEN_REPO_USERNAME_ENV_NAME = "NEXUS_USERNAME"
         const val MAVEN_REPO_PASSWORD_ENV_NAME = "NEXUS_PASSWORD"
@@ -65,8 +66,9 @@ class BumpDeps : CliktCommand() {
         .convert { convertReviewersArg(it) }
         .default(Reviewers(), defaultForHelp = "")
 
-    private val baseBranch by option(help = "the name of the branch to target in pull requests")
-        .default(BASE_BRANCH)
+    private val baseBranch by option(help = "the name of the branch to target in pull requests").convert { ref ->
+        ref.trim().removePrefix(BRANCH_PREFIX)
+    }.required()
 
     private val oauthToken by lazy {
         System.getenv(GITHUB_OAUTH_TOKEN_ENV_NAME)
