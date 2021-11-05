@@ -6,7 +6,8 @@ inputs:
     required: true
   baseBranch:
     description: 'the branch to update'
-    required: true
+    required: false
+    default: 'master'
   key:
     description: 'the key in gradle.properties to modify'
     required: true
