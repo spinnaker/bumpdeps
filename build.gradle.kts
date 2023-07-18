@@ -34,7 +34,7 @@ tasks.withType<Test> {
 }
 
 application {
-    mainClassName = "io.spinnaker.bumpdeps.MainKt"
+    mainClass.set("io.spinnaker.bumpdeps.MainKt")
 }
 
 ktlint {
